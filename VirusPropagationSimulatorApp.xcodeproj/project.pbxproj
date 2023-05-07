@@ -14,7 +14,6 @@
 		B8CF53B52A03CCB8000D3775 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = B8CF53B32A03CCB8000D3775 /* LaunchScreen.storyboard */; };
 		B8CF53BD2A03CE93000D3775 /* SettingsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8CF53BC2A03CE93000D3775 /* SettingsViewController.swift */; };
 		B8CF53C72A03F47A000D3775 /* Extention + UIView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8CF53C62A03F47A000D3775 /* Extention + UIView.swift */; };
-		B8CF53CC2A041845000D3775 /* Parameters.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8CF53CB2A041845000D3775 /* Parameters.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -27,7 +26,6 @@
 		B8CF53B62A03CCB8000D3775 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B8CF53BC2A03CE93000D3775 /* SettingsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewController.swift; sourceTree = "<group>"; };
 		B8CF53C62A03F47A000D3775 /* Extention + UIView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Extention + UIView.swift"; sourceTree = "<group>"; };
-		B8CF53CB2A041845000D3775 /* Parameters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Parameters.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -60,7 +58,6 @@
 		B8CF53A72A03CCB7000D3775 /* VirusPropagationSimulatorApp */ = {
 			isa = PBXGroup;
 			children = (
-				B8CF53CA2A04127F000D3775 /* Models */,
 				B8CF53C52A03F453000D3775 /* Service */,
 				B8CF53BF2A03CEEF000D3775 /* Application */,
 				B8CF53C22A03CF3A000D3775 /* Configs */,
@@ -111,14 +108,6 @@
 				B8CF53C62A03F47A000D3775 /* Extention + UIView.swift */,
 			);
 			path = Service;
-			sourceTree = "<group>";
-		};
-		B8CF53CA2A04127F000D3775 /* Models */ = {
-			isa = PBXGroup;
-			children = (
-				B8CF53CB2A041845000D3775 /* Parameters.swift */,
-			);
-			path = Models;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -195,7 +184,6 @@
 				B8CF53A92A03CCB7000D3775 /* AppDelegate.swift in Sources */,
 				B8CF53AB2A03CCB7000D3775 /* SceneDelegate.swift in Sources */,
 				B8CF53C72A03F47A000D3775 /* Extention + UIView.swift in Sources */,
-				B8CF53CC2A041845000D3775 /* Parameters.swift in Sources */,
 				B8CF53BD2A03CE93000D3775 /* SettingsViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -7,7 +7,9 @@
 
 import UIKit
 
-class SettingsViewController: UIViewController {
+final class SettingsViewController: UIViewController {
+
+    // MARK: - Group Size
     private lazy var GroupSizeLabel: UILabel = {
         let label = UILabel()
         label.translatesAutoresizingMaskIntoConstraints = false
@@ -36,6 +38,7 @@ class SettingsViewController: UIViewController {
         return textField
     }()
 
+    // MARK: - Infection Factor
     private lazy var InfectionFactorLabel: UILabel = {
         let label = UILabel()
         label.translatesAutoresizingMaskIntoConstraints = false
@@ -64,6 +67,7 @@ class SettingsViewController: UIViewController {
         return textField
     }()
 
+    // MARK: - Timer
     private lazy var TimerLabel: UILabel = {
         let label = UILabel()
         label.translatesAutoresizingMaskIntoConstraints = false
@@ -92,6 +96,7 @@ class SettingsViewController: UIViewController {
         return textField
     }()
 
+    // MARK: - Start Button
     private lazy var StartModulationButton: UIButton = {
         var buttonConfiguration = UIButton.Configuration.filled()
         buttonConfiguration.baseBackgroundColor = .systemBlue
@@ -108,11 +113,13 @@ class SettingsViewController: UIViewController {
         return button
     }()
 
+    // MARK: -  View Life Cycle
     override func viewDidLoad() {
         super.viewDidLoad()
         setupMainView()
     }
 
+    // MARK: - Start Button Did Tapped
     @objc func startModulationButtonDidTupped() {
         if let groupSize = Int(GroupSizeTextField.text ?? "0"),
            let infectionFactor = Int(InfectionFactorTextField.text ?? "0"),
@@ -134,19 +141,19 @@ class SettingsViewController: UIViewController {
 
             navigationController?.pushViewController(modulationVC, animated: true)
         } else {
-
+            // тут будет алерт и анимация
         }
     }
 
+    /// Создает правильную матрицу из какого то числа
     func makeMatrix(_ number: Int) -> [[Bool]] {
-
         let rows = sqrt(Double(number))
         let  columns = sqrt(Double(number))
-
         return Array(repeating: Array(repeating: false, count: Int(columns)), count: Int(rows))
     }
 }
 
+// MARK: - Setup Main View
 extension SettingsViewController {
     private func setupMainView() {
         view.backgroundColor = .systemGray6
