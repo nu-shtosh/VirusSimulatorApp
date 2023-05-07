@@ -10,31 +10,33 @@ import UIKit
 class ModulationViewController: UIViewController {
 
     // MARK: - Properties
-    var groupSize: Int = 0
-    var infectionFactor: Int = 0
-    var timer: Double = 0
-
-    var updateTimer: Timer?
-
+    var groupSize = 0
+    var infectionFactor = 0
+    var recalculationPeriod = 0.0
     var matrix: [[Bool]] = [[]]
 
-    var green: Int = 0
-    var red: Int = 0
+    // MARK: - Private Properties
+    private var green = 0
+    private var red = 0
 
-    var matrixElements: Int {
+    private var timer: Timer?
+    private var seconds = 0
+
+    private var matrixElements: Int {
         let rowCount = matrix.count
         let columnCount = matrix.first?.count ?? 0
 
         let totalCount = rowCount * columnCount
         return totalCount
     }
-    
-    let standardCellSize = CGSize(width: 100, height: 100)
-    let enlargedCellSize = CGSize(width: 200, height: 200)
 
-    var cellScaleFactor = 1.0
+    private var cellScaleFactor = 1.0
 
-   // MARK: - Header
+    // MARK: - UI Elements
+
+
+
+    // MARK: - Header
     private lazy var header: UIView = {
         let view = UIView()
         view.translatesAutoresizingMaskIntoConstraints = false
@@ -54,7 +56,7 @@ class ModulationViewController: UIViewController {
     private lazy var greenLabel: UILabel = {
         let label = UILabel()
         label.translatesAutoresizingMaskIntoConstraints = false
-        label.text = ": 0"
+        label.text = ": \(matrixElements)"
         return label
     }()
 
@@ -70,17 +72,15 @@ class ModulationViewController: UIViewController {
     private lazy var redLabel: UILabel = {
         let label = UILabel()
         label.translatesAutoresizingMaskIntoConstraints = false
-        label.text = ": 0"
+        label.text = ": \(red)"
         return label
     }()
 
-    // MARK: - Collection
+    // MARK: - Collection View
     private lazy var collectionView: UICollectionView = {
         let layout = UICollectionViewFlowLayout()
         layout.minimumInteritemSpacing = 5
         layout.minimumLineSpacing = 5
-//        layout.itemSize = CGSize(width: 30, height: 30)
-
         layout.scrollDirection = .horizontal
 
         let collectionView = UICollectionView(
@@ -105,22 +105,50 @@ class ModulationViewController: UIViewController {
         return view
     }()
 
+    private lazy var startButton: UIButton = {
+        var buttonConfiguration = UIButton.Configuration.filled()
+        buttonConfiguration.baseBackgroundColor = .systemBlue
+        buttonConfiguration.title = "Start"
+        let button = UIButton(configuration: buttonConfiguration)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.layer.shadowOffset = CGSize(width: 3, height: 3)
+        button.layer.shadowRadius = 2
+        button.layer.shadowColor = UIColor.black.cgColor
+        button.layer.shadowOpacity = 0.5
+        button.addTarget(self,
+                         action: #selector(startButtonDidTupped),
+                         for: .touchUpInside)
+        return button
+    }()
+
+    private lazy var stopButton: UIButton = {
+        var buttonConfiguration = UIButton.Configuration.filled()
+        buttonConfiguration.baseBackgroundColor = .systemRed
+        buttonConfiguration.title = "Stop"
+        let button = UIButton(configuration: buttonConfiguration)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.layer.shadowOffset = CGSize(width: 3, height: 3)
+        button.layer.shadowRadius = 2
+        button.layer.shadowColor = UIColor.black.cgColor
+        button.layer.shadowOpacity = 0.5
+        button.addTarget(self,
+                         action: #selector(stopButtonDidTupped),
+                         for: .touchUpInside)
+        return button
+    }()
+
+    private lazy var timerLabel: UILabel = {
+        let label = UILabel()
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+
+    // MARK: - View Life Cycle
     override func viewDidLoad() {
         super.viewDidLoad()
         setupMainView()
         red = 0
         green = matrixElements
-        if updateTimer == nil {
-            let timer = Timer(timeInterval: self.timer,
-                            target: self,
-                            selector: #selector(updateView),
-                            userInfo: nil,
-                            repeats: true)
-          RunLoop.current.add(timer, forMode: .common)
-          timer.tolerance = 0.1
-
-          self.updateTimer = timer
-        }
         self.collectionView.reloadData()
     }
 
@@ -131,17 +159,19 @@ class ModulationViewController: UIViewController {
 
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
-        updateTimer?.invalidate()
-        updateTimer = nil
+        timer?.invalidate()
+        timer = nil
     }
 
+    // MARK: - Private Methods
     // MARK: - Update View With Timer
-    @objc func updateView() {
+    private func updateView() {
         if green == 0 {
-            updateTimer?.invalidate()
-            updateTimer = nil
+            timer?.invalidate()
+            timer = nil
         }
-        replaceRandomNeighborsOfOneWithZero(matrix: &matrix, withFactor: infectionFactor)
+        replaceRandomNeighborsOfOneWithZero(matrix: &matrix,
+                                            withFactor: infectionFactor)
         greenLabel.text = ": \(green)"
         redLabel.text = ": \(red)"
         self.collectionView.reloadData()
@@ -149,7 +179,8 @@ class ModulationViewController: UIViewController {
 
 
     // MARK: - Change Item in Matrix
-    private func replaceRandomNeighborsOfOneWithZero(matrix: inout [[Bool]], withFactor factor: Int) {
+    private func replaceRandomNeighborsOfOneWithZero(matrix: inout [[Bool]],
+                                                     withFactor factor: Int) {
         let numRows = matrix.count
         let numColumns = matrix[0].count
 
@@ -170,6 +201,72 @@ class ModulationViewController: UIViewController {
             }
         }
     }
+
+    // MARK: - Update Timer
+    private func updateTimerLabel() {
+        let minutes = seconds / 60 * Int(recalculationPeriod)
+        let seconds = seconds % 60 * Int(recalculationPeriod)
+        timerLabel.text = "Pass Time: \(String(format: "%02d:%02d", minutes, seconds))"
+    }
+
+    @objc
+    func startButtonDidTupped() {
+        if timer == nil {
+            DispatchQueue.global(qos: .background).async {
+                self.timer = Timer.scheduledTimer(withTimeInterval: self.recalculationPeriod,
+                                                  repeats: true) { timer in
+                    self.seconds += 1
+                    DispatchQueue.main.async {
+                        self.updateView()
+                        self.updateTimerLabel()
+                    }
+                }
+
+                self.timer!.tolerance = 0.1
+                let runLoop = RunLoop.current
+                runLoop.add(self.timer!, forMode: .default)
+                runLoop.run()
+            }
+            addRandomRedInMatrix(&matrix)
+        }
+    }
+
+    func selectCell() {
+        if timer == nil {
+            DispatchQueue.global(qos: .background).async {
+                self.timer = Timer.scheduledTimer(withTimeInterval: self.recalculationPeriod,
+                                                  repeats: true) { timer in
+                    self.seconds += 1
+                    DispatchQueue.main.async {
+                        self.updateView()
+                        self.updateTimerLabel()
+                    }
+                }
+
+                self.timer!.tolerance = 0.1
+                let runLoop = RunLoop.current
+                runLoop.add(self.timer!, forMode: .default)
+                runLoop.run()
+            }
+        }
+    }
+
+    private func addRandomRedInMatrix(_ matrix: inout [[Bool]]) {
+        let randomRow = Int.random(in: 0..<matrix.count)
+        let randomColumn = Int.random(in: 0..<matrix[randomRow].count)
+
+        if matrix[randomRow][randomColumn] == false {
+            green -= 1
+            red += 1
+            matrix[randomRow][randomColumn] = true
+        }
+    }
+
+    @objc
+    func stopButtonDidTupped() {
+        timer?.invalidate()
+        timer = nil
+    }
 }
 
 // MARK: - Setup View
@@ -179,13 +276,14 @@ extension ModulationViewController {
         setupNavigationBar()
         view.addSubviews(header, footer)
         header.addSubviews(greenView, greenLabel, redLabel, redView)
+        footer.addSubviews(timerLabel, startButton, stopButton)
         view.addSubview(collectionView)
         setConstraints()
     }
 
     private func setConstraints() {
         NSLayoutConstraint.activate([
-            // header
+            // Header
             header.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             header.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
             header.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
@@ -207,17 +305,30 @@ extension ModulationViewController {
             redView.widthAnchor.constraint(equalToConstant: 30),
             redView.heightAnchor.constraint(equalToConstant: 30),
 
-            // collection view
+            // Collection view
             collectionView.topAnchor.constraint(equalTo: header.bottomAnchor),
             collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             collectionView.bottomAnchor.constraint(equalTo: footer.topAnchor),
 
-            // footer
+            // Footer
             footer.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
             footer.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
             footer.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
             footer.heightAnchor.constraint(equalToConstant: 60),
+
+            timerLabel.centerYAnchor.constraint(equalTo: footer.centerYAnchor),
+            timerLabel.leadingAnchor.constraint(equalTo: footer.leadingAnchor, constant: 16),
+
+            startButton.centerYAnchor.constraint(equalTo: footer.centerYAnchor),
+            startButton.trailingAnchor.constraint(equalTo: footer.trailingAnchor, constant: -16),
+            startButton.widthAnchor.constraint(equalToConstant: 70),
+            startButton.heightAnchor.constraint(equalToConstant: 40),
+
+            stopButton.centerYAnchor.constraint(equalTo: footer.centerYAnchor),
+            stopButton.trailingAnchor.constraint(equalTo: startButton.leadingAnchor, constant: -16),
+            stopButton.widthAnchor.constraint(equalToConstant: 60),
+            stopButton.heightAnchor.constraint(equalToConstant: 40),
         ])
     }
 
@@ -227,11 +338,18 @@ extension ModulationViewController {
         navigationItem.largeTitleDisplayMode = .never
         navigationController?.navigationBar.standardAppearance = navBarAppearance
         navigationController?.navigationBar.scrollEdgeAppearance = navBarAppearance
-        let plusButton = UIBarButtonItem(image: UIImage(systemName: "plus"), style: .plain, target: self, action: #selector(plus))
-        let minusButton = UIBarButtonItem(image: UIImage(systemName: "minus"), style: .plain, target: self, action: #selector(minus))
+        let plusButton = UIBarButtonItem(image: UIImage(systemName: "plus"),
+                                         style: .plain,
+                                         target: self,
+                                         action: #selector(plus))
+        let minusButton = UIBarButtonItem(image: UIImage(systemName: "minus"),
+                                          style: .plain,
+                                          target: self,
+                                          action: #selector(minus))
         navigationItem.rightBarButtonItems = [plusButton, minusButton]
     }
 
+    // MARK: - Scale Methods
     @objc func plus() {
         self.cellScaleFactor += 0.1
         self.collectionView.collectionViewLayout.invalidateLayout()
@@ -274,28 +392,48 @@ extension ModulationViewController: UICollectionViewDelegate, UICollectionViewDa
 
     func collectionView(_ collectionView: UICollectionView,
                         didSelectItemAt indexPath: IndexPath) {
-        print(indexPath)
+        selectCell()
         let item = matrix[indexPath.section][indexPath.row]
         if item {
             green += 1
             matrix[indexPath.section][indexPath.row].toggle()
             red -= 1
         } else {
-            green -= 1
-            matrix[indexPath.section][indexPath.row].toggle()
             red += 1
+            matrix[indexPath.section][indexPath.row].toggle()
+            green -= 1
+
         }
         collectionView.reloadData()
     }
 }
 
+// MARK: - Collection View Delegate Flow Layout
 extension ModulationViewController: UICollectionViewDelegateFlowLayout {
     func collectionView(_ collectionView: UICollectionView,
                         layout collectionViewLayout: UICollectionViewLayout,
                         sizeForItemAt indexPath: IndexPath) -> CGSize {
-
-        let width = 30 * cellScaleFactor
-        let height = 30 * cellScaleFactor
-        return CGSize(width: width, height: height)
+        switch matrixElements {
+        case 0...100:
+            let width = 40 * cellScaleFactor
+            let height = 40 * cellScaleFactor
+            return CGSize(width: width, height: height)
+        case 100...300:
+            let width = 23 * cellScaleFactor
+            let height = 23 * cellScaleFactor
+            return CGSize(width: width, height: height)
+        case 300...600:
+            let width = 15 * cellScaleFactor
+            let height = 15 * cellScaleFactor
+            return CGSize(width: width, height: height)
+        case 600...900:
+            let width = 11 * cellScaleFactor
+            let height = 11 * cellScaleFactor
+            return CGSize(width: width, height: height)
+        default:
+            let width = 20 * cellScaleFactor
+            let height = 20 * cellScaleFactor
+            return CGSize(width: width, height: height)
+        }
     }
 }

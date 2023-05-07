@@ -10,7 +10,7 @@ import UIKit
 final class SettingsViewController: UIViewController {
 
     // MARK: - Group Size
-    private lazy var GroupSizeLabel: UILabel = {
+    private lazy var groupSizeLabel: UILabel = {
         let label = UILabel()
         label.translatesAutoresizingMaskIntoConstraints = false
         label.text = "Input Group Size"
@@ -19,7 +19,7 @@ final class SettingsViewController: UIViewController {
         return label
     }()
 
-    private lazy var GroupSizeTextField: UITextField = {
+    private lazy var groupSizeTextField: UITextField = {
         let textField = UITextField()
         textField.translatesAutoresizingMaskIntoConstraints = false
         textField.placeholder = "100"
@@ -39,7 +39,7 @@ final class SettingsViewController: UIViewController {
     }()
 
     // MARK: - Infection Factor
-    private lazy var InfectionFactorLabel: UILabel = {
+    private lazy var infectionFactorLabel: UILabel = {
         let label = UILabel()
         label.translatesAutoresizingMaskIntoConstraints = false
         label.text = "Input Infection Factor"
@@ -48,7 +48,7 @@ final class SettingsViewController: UIViewController {
         return label
     }()
 
-    private lazy var InfectionFactorTextField: UITextField = {
+    private lazy var infectionFactorTextField: UITextField = {
         let textField = UITextField()
         textField.translatesAutoresizingMaskIntoConstraints = false
         textField.placeholder = "3"
@@ -68,19 +68,19 @@ final class SettingsViewController: UIViewController {
     }()
 
     // MARK: - Timer
-    private lazy var TimerLabel: UILabel = {
+    private lazy var recalculationPeriodLabel: UILabel = {
         let label = UILabel()
         label.translatesAutoresizingMaskIntoConstraints = false
-        label.text = "Input Timer"
+        label.text = "Input Recalculation Period"
         label.textColor = .black
         label.font = .systemFont(ofSize: 16, weight: .bold)
         return label
     }()
 
-    private lazy var TimerTextField: UITextField = {
+    private lazy var recalculationPeriodTextField: UITextField = {
         let textField = UITextField()
         textField.translatesAutoresizingMaskIntoConstraints = false
-        textField.placeholder = "3"
+        textField.placeholder = "1"
         textField.keyboardType = .numberPad
         textField.layer.masksToBounds = true
         textField.font = .systemFont(ofSize: 16, weight: .regular)
@@ -96,8 +96,19 @@ final class SettingsViewController: UIViewController {
         return textField
     }()
 
+    // MARK: - Alert Message
+    private lazy var alertMessage: UILabel = {
+        let label = UILabel()
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.text = "You must to add something in Text Fields!"
+        label.textColor = .red
+        label.font = .systemFont(ofSize: 16, weight: .bold)
+        label.isHidden = true
+        return label
+    }()
+
     // MARK: - Start Button
-    private lazy var StartModulationButton: UIButton = {
+    private lazy var startModulationButton: UIButton = {
         var buttonConfiguration = UIButton.Configuration.filled()
         buttonConfiguration.baseBackgroundColor = .systemBlue
         buttonConfiguration.title = "Start Modulation"
@@ -121,35 +132,39 @@ final class SettingsViewController: UIViewController {
 
     // MARK: - Start Button Did Tapped
     @objc func startModulationButtonDidTupped() {
-        if let groupSize = Int(GroupSizeTextField.text ?? "0"),
-           let infectionFactor = Int(InfectionFactorTextField.text ?? "0"),
-           let timer = Double(TimerTextField.text ?? "0"),
+        if let groupSize = Int(groupSizeTextField.text ?? "0"),
+           let infectionFactor = Int(infectionFactorTextField.text ?? "0"),
+           let recalculationPeriod = Double(recalculationPeriodTextField.text ?? "0"),
            groupSize > 0,
            infectionFactor > 0,
-           timer > 0 {
+           recalculationPeriod > 0 {
             let modulationVC = ModulationViewController()
 
             modulationVC.groupSize = groupSize
             modulationVC.infectionFactor = infectionFactor
-            modulationVC.timer = timer
+            modulationVC.recalculationPeriod = recalculationPeriod
 
             modulationVC.matrix = makeMatrix(groupSize)
 
-            self.GroupSizeTextField.text = nil
-            self.InfectionFactorTextField.text = nil
-            self.TimerTextField.text = nil
+            self.groupSizeTextField.text = nil
+            self.infectionFactorTextField.text = nil
+            self.recalculationPeriodTextField.text = nil
 
+            self.alertMessage.isHidden = true
             navigationController?.pushViewController(modulationVC, animated: true)
         } else {
-            // тут будет алерт и анимация
+            startModulationButton.shake()
+            alertMessage.isHidden = false
         }
     }
 
     /// Создает правильную матрицу из какого то числа
     func makeMatrix(_ number: Int) -> [[Bool]] {
         let rows = sqrt(Double(number))
-        let  columns = sqrt(Double(number))
-        return Array(repeating: Array(repeating: false, count: Int(columns)), count: Int(rows))
+        let columns = sqrt(Double(number))
+        return Array(repeating: Array(repeating: false,
+                                      count: Int(columns)),
+                     count: Int(rows))
     }
 }
 
@@ -158,13 +173,14 @@ extension SettingsViewController {
     private func setupMainView() {
         view.backgroundColor = .systemGray6
         setupNavigationBar()
-        view.addSubviews(GroupSizeLabel,
-                         GroupSizeTextField,
-                         InfectionFactorLabel,
-                         InfectionFactorTextField,
-                         TimerLabel,
-                         TimerTextField,
-                         StartModulationButton)
+        view.addSubviews(groupSizeLabel,
+                         groupSizeTextField,
+                         infectionFactorLabel,
+                         infectionFactorTextField,
+                         recalculationPeriodLabel,
+                         recalculationPeriodTextField,
+                         startModulationButton,
+                         alertMessage)
         setupConstraints()
     }
 
@@ -174,43 +190,49 @@ extension SettingsViewController {
         navigationItem.largeTitleDisplayMode = .never
         navigationController?.navigationBar.standardAppearance = navBarAppearance
         navigationController?.navigationBar.scrollEdgeAppearance = navBarAppearance
-        
     }
 
     private func setupConstraints() {
         NSLayoutConstraint.activate([
-            GroupSizeLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
-            GroupSizeLabel.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 16),
-            GroupSizeLabel.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
+            //Group Size
+            groupSizeLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
+            groupSizeLabel.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 16),
+            groupSizeLabel.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
 
-            GroupSizeTextField.topAnchor.constraint(equalTo: GroupSizeLabel.bottomAnchor, constant: 10),
-            GroupSizeTextField.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 16),
-            GroupSizeTextField.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
-            GroupSizeTextField.heightAnchor.constraint(equalToConstant: 40),
+            groupSizeTextField.topAnchor.constraint(equalTo: groupSizeLabel.bottomAnchor, constant: 10),
+            groupSizeTextField.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 16),
+            groupSizeTextField.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
+            groupSizeTextField.heightAnchor.constraint(equalToConstant: 40),
 
-            InfectionFactorLabel.topAnchor.constraint(equalTo: GroupSizeTextField.bottomAnchor, constant: 20),
-            InfectionFactorLabel.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 16),
-            InfectionFactorLabel.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
+            // Factor
+            infectionFactorLabel.topAnchor.constraint(equalTo: groupSizeTextField.bottomAnchor, constant: 20),
+            infectionFactorLabel.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 16),
+            infectionFactorLabel.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
 
-            InfectionFactorTextField.topAnchor.constraint(equalTo: InfectionFactorLabel.bottomAnchor, constant: 10),
-            InfectionFactorTextField.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 16),
-            InfectionFactorTextField.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
-            InfectionFactorTextField.heightAnchor.constraint(equalToConstant: 40),
+            infectionFactorTextField.topAnchor.constraint(equalTo: infectionFactorLabel.bottomAnchor, constant: 10),
+            infectionFactorTextField.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 16),
+            infectionFactorTextField.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
+            infectionFactorTextField.heightAnchor.constraint(equalToConstant: 40),
 
-            TimerLabel.topAnchor.constraint(equalTo: InfectionFactorTextField.bottomAnchor, constant: 20),
-            TimerLabel.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 16),
-            TimerLabel.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
+            // Timer
+            recalculationPeriodLabel.topAnchor.constraint(equalTo: infectionFactorTextField.bottomAnchor, constant: 20),
+            recalculationPeriodLabel.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 16),
+            recalculationPeriodLabel.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
 
-            TimerTextField.topAnchor.constraint(equalTo: TimerLabel.bottomAnchor, constant: 10),
-            TimerTextField.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 16),
-            TimerTextField.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
-            TimerTextField.heightAnchor.constraint(equalToConstant: 40),
+            recalculationPeriodTextField.topAnchor.constraint(equalTo: recalculationPeriodLabel.bottomAnchor, constant: 10),
+            recalculationPeriodTextField.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 16),
+            recalculationPeriodTextField.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
+            recalculationPeriodTextField.heightAnchor.constraint(equalToConstant: 40),
 
-            StartModulationButton.topAnchor.constraint(equalTo: TimerTextField.bottomAnchor, constant: 30),
-            StartModulationButton.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 16),
-            StartModulationButton.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
-            StartModulationButton.heightAnchor.constraint(equalToConstant: 40),
+            startModulationButton.topAnchor.constraint(equalTo: recalculationPeriodTextField.bottomAnchor, constant: 30),
+            startModulationButton.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 16),
+            startModulationButton.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
+            startModulationButton.heightAnchor.constraint(equalToConstant: 40),
 
+            // Alert Message
+            alertMessage.topAnchor.constraint(equalTo: startModulationButton.bottomAnchor, constant: 10),
+            alertMessage.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 16),
+            alertMessage.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
         ])
     }
 }
