@@ -78,7 +78,7 @@ final class ModulationViewController: UIViewController {
         let layout = UICollectionViewFlowLayout()
         layout.minimumInteritemSpacing = 8
         layout.minimumLineSpacing = 8
-        layout.scrollDirection = .horizontal
+        layout.scrollDirection =  .horizontal
 
         let collectionView = UICollectionView(
             frame: self.view.bounds,
