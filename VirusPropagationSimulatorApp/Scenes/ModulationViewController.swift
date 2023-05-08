@@ -7,7 +7,7 @@
 
 import UIKit
 
-final class ModulationViewController: UIViewController {
+final class ModulationViewController: UIViewController, UIGestureRecognizerDelegate {
 
     // MARK: - Properties
     var groupSize = 0
@@ -18,7 +18,11 @@ final class ModulationViewController: UIViewController {
     // MARK: - Private Properties
     private var timer: Timer?
     private var seconds = 0
+    private var cellScaleFactor = 1.0
+    private var scale: CGFloat = 1.0
 
+
+    // MARK: - Computed Properties
     private var matrixElements: Int {
         let rowCount = matrix.count
         let columnCount = matrix.first?.count ?? 0
@@ -29,31 +33,27 @@ final class ModulationViewController: UIViewController {
 
     private var greenElements: Int {
         var count = 0
-
-            for row in matrix {
-                for element in row {
-                    if !element {
-                        count += 1
-                    }
+        for row in matrix {
+            for element in row {
+                if !element {
+                    count += 1
                 }
             }
-            return count
+        }
+        return count
     }
 
     private var redElements: Int {
         var count = 0
-
-            for row in matrix {
-                for element in row {
-                    if element {
-                        count += 1
-                    }
+        for row in matrix {
+            for element in row {
+                if element {
+                    count += 1
                 }
             }
-            return count
+        }
+        return count
     }
-
-    private var cellScaleFactor = 1.0
 
     // MARK: - UI Elements
     // MARK: - Header
@@ -96,21 +96,31 @@ final class ModulationViewController: UIViewController {
         return label
     }()
 
+    // MARK: - Scroll View
+    private lazy var scrollView: UIScrollView = {
+        let scrollView = UIScrollView(frame: CGRect(x: 0, y: 0, width: 100, height: 100))
+        scrollView.backgroundColor = .white
+        scrollView.showsVerticalScrollIndicator = false
+        scrollView.contentSize = CGSize(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        return scrollView
+    }()
+
     // MARK: - Collection View
     private lazy var collectionView: UICollectionView = {
         let layout = UICollectionViewFlowLayout()
-        layout.minimumInteritemSpacing = 8
-        layout.minimumLineSpacing = 8
-        layout.scrollDirection =  .horizontal
-
+        layout.scrollDirection =  .vertical
 
         let collectionView = UICollectionView(
-            frame: self.view.bounds,
+            frame: CGRect(x: 0,
+                          y: 0,
+                          width: UIScreen.main.bounds.width * 3,
+                          height: UIScreen.main.bounds.height * 2),
             collectionViewLayout: layout
         )
 
         collectionView.translatesAutoresizingMaskIntoConstraints = false
-        collectionView.backgroundColor = .systemGray5
+        collectionView.backgroundColor = .white
         collectionView.register(UICollectionViewCell.self,
                                 forCellWithReuseIdentifier: "collectionCell")
 
@@ -172,7 +182,9 @@ final class ModulationViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupMainView()
-        print(infectionFactor)
+        let pinchGesture = UIPinchGestureRecognizer(target: self, action: #selector(handlePinchGesture(_:)))
+        pinchGesture.delegate = self
+        collectionView.addGestureRecognizer(pinchGesture)
         self.collectionView.reloadData()
     }
 
@@ -189,6 +201,7 @@ final class ModulationViewController: UIViewController {
 
     // MARK: - Private Methods
     // MARK: - Update View With Timer
+    /// Обновление вью
     private func updateView() {
         if greenElements <= 0 {
             timer?.invalidate()
@@ -203,11 +216,12 @@ final class ModulationViewController: UIViewController {
 
 
     // MARK: - Change Item in Matrix
+    /// Замена случайного кол-ва клеток в зависимости от фактора заражения
     private func replaceRandomNeighborsOfOneWithZero(matrix: [[Bool]],
                                                      withFactor factor: Int) {
         DispatchQueue.global(qos: .background).async {
-        let numRows = matrix.count
-        let numColumns = matrix[0].count
+            let numRows = matrix.count
+            let numColumns = matrix[0].count
 
             for row in 0..<numRows {
                 for column in 0..<numColumns {
@@ -229,12 +243,14 @@ final class ModulationViewController: UIViewController {
     }
 
     // MARK: - Update Timer
+    /// Обновление таймера
     private func updateTimerLabel() {
         let minutes = seconds / 60 * Int(recalculationPeriod)
         let seconds = seconds % 60 * Int(recalculationPeriod)
         timerLabel.text = "Pass Time: \(String(format: "%02d:%02d", minutes, seconds))"
     }
 
+    /// Заражение случайной клетки и запуск таймера
     @objc
     func startButtonDidTupped() {
         if timer == nil {
@@ -256,7 +272,8 @@ final class ModulationViewController: UIViewController {
             addRandomRedInMatrix(matrix)
         }
     }
-
+    
+    /// Метод для запуска таймера при нажатии на клетку
     private func selectCell() {
         if timer == nil {
             DispatchQueue.global(qos: .background).async {
@@ -277,6 +294,7 @@ final class ModulationViewController: UIViewController {
         }
     }
 
+    /// Добавление случайной больной клетки
     private func addRandomRedInMatrix(_ matrix: [[Bool]]) {
         DispatchQueue.global(qos: .background).async {
             let randomRow = Int.random(in: 0..<matrix.count)
@@ -291,10 +309,27 @@ final class ModulationViewController: UIViewController {
         }
     }
 
+    /// Остановка таймера и процесса заражения
     @objc
     func stopButtonDidTupped() {
         timer?.invalidate()
         timer = nil
+    }
+
+    @objc func handlePinchGesture(_ gestureRecognizer: UIPinchGestureRecognizer) {
+        if gestureRecognizer.state == .began || gestureRecognizer.state == .changed {
+            // Изменяем масштаб
+            scale *= gestureRecognizer.scale
+            gestureRecognizer.scale = 1.0
+
+            // Применяем масштаб к UICollectionView
+            collectionView.transform = CGAffineTransform(scaleX: scale, y: scale)
+        }
+    }
+
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
+        // Разрешаем одновременное распознавание жестов
+        return true
     }
 }
 
@@ -306,10 +341,12 @@ extension ModulationViewController {
         view.addSubviews(header, footer)
         header.addSubviews(greenView, greenLabel, redLabel, redView)
         footer.addSubviews(timerLabel, startButton, stopButton)
-        view.addSubview(collectionView)
+        view.addSubview(scrollView)
+        scrollView.addSubview(collectionView)
         setConstraints()
     }
 
+    /// Метод для установки констрейнтов
     private func setConstraints() {
         NSLayoutConstraint.activate([
             // Header
@@ -324,21 +361,27 @@ extension ModulationViewController {
             greenView.heightAnchor.constraint(equalToConstant: 30),
 
             greenLabel.centerYAnchor.constraint(equalTo: header.centerYAnchor),
-            greenLabel.leadingAnchor.constraint(equalTo: greenView.trailingAnchor, constant: 16),
+            greenLabel.leadingAnchor.constraint(equalTo: greenView.trailingAnchor, constant: 8),
 
             redLabel.centerYAnchor.constraint(equalTo: header.centerYAnchor),
             redLabel.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -16),
 
             redView.centerYAnchor.constraint(equalTo: header.centerYAnchor),
-            redView.trailingAnchor.constraint(equalTo: redLabel.leadingAnchor, constant: -16),
+            redView.trailingAnchor.constraint(equalTo: redLabel.leadingAnchor, constant: -8),
             redView.widthAnchor.constraint(equalToConstant: 30),
             redView.heightAnchor.constraint(equalToConstant: 30),
 
             // Collection view
-            collectionView.topAnchor.constraint(equalTo: header.bottomAnchor),
-            collectionView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
-            collectionView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
-            collectionView.bottomAnchor.constraint(equalTo: footer.topAnchor),
+            //            collectionView.topAnchor.constraint(equalTo: header.bottomAnchor, constant: 8),
+            //            collectionView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 8),
+            //            collectionView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -8),
+            //            collectionView.bottomAnchor.constraint(equalTo: footer.topAnchor, constant: -8),
+
+            scrollView.topAnchor.constraint(equalTo: header.bottomAnchor),
+            scrollView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: footer.topAnchor),
+            
 
             // Footer
             footer.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
@@ -361,6 +404,7 @@ extension ModulationViewController {
         ])
     }
 
+    /// Метод для установки панели навигации
     private func setupNavigationBar() {
         let navBarAppearance = UINavigationBarAppearance()
         title = "Modulation"
@@ -370,23 +414,27 @@ extension ModulationViewController {
         let plusButton = UIBarButtonItem(image: UIImage(systemName: "plus"),
                                          style: .plain,
                                          target: self,
-                                         action: #selector(plus))
+                                         action: #selector(plusDidTapped))
         let minusButton = UIBarButtonItem(image: UIImage(systemName: "minus"),
                                           style: .plain,
                                           target: self,
-                                          action: #selector(minus))
+                                          action: #selector(minusDidTapped))
         navigationItem.rightBarButtonItems = [plusButton, minusButton]
     }
 
     // MARK: - Scale Methods
-    @objc func plus() {
+    /// Увеличение размера клеток
+    @objc
+    func plusDidTapped() {
         self.cellScaleFactor += 0.1
         self.collectionView.collectionViewLayout.invalidateLayout()
         self.collectionView.reloadData()
     }
 
-    @objc func minus() {
-        if cellScaleFactor > 0.1 {
+    /// Уменьшение размера клеток
+    @objc
+    func minusDidTapped() {
+        if cellScaleFactor > 0.2 {
             self.cellScaleFactor -= 0.1
         }
         self.collectionView.collectionViewLayout.invalidateLayout()
@@ -425,7 +473,6 @@ extension ModulationViewController: UICollectionViewDelegate, UICollectionViewDa
             self.selectCell()
             let item = self.matrix[indexPath.section][indexPath.row]
             DispatchQueue.main.async {
-
                 if item {
                     self.matrix[indexPath.section][indexPath.row].toggle()
                 } else {
@@ -439,8 +486,8 @@ extension ModulationViewController: UICollectionViewDelegate, UICollectionViewDa
     func collectionView(collectionView: UICollectionView,
                         layout collectionViewLayout: UICollectionViewLayout,
                         insetForSectionAtIndex section: Int) -> UIEdgeInsets {
-            return UIEdgeInsets(top: 5, left: 5, bottom: 5, right: 5)
-        }
+        return UIEdgeInsets(top: 5, left: 5, bottom: 5, right: 5)
+    }
 }
 
 // MARK: - Collection View Delegate Flow Layout
