@@ -16,9 +16,6 @@ final class ModulationViewController: UIViewController {
     var matrix: [[Bool]] = [[]]
 
     // MARK: - Private Properties
-    private var green = 0
-    private var red = 0
-
     private var timer: Timer?
     private var seconds = 0
 
@@ -28,6 +25,32 @@ final class ModulationViewController: UIViewController {
 
         let totalCount = rowCount * columnCount
         return totalCount
+    }
+
+    private var greenElements: Int {
+        var count = 0
+
+            for row in matrix {
+                for element in row {
+                    if !element {
+                        count += 1
+                    }
+                }
+            }
+            return count
+    }
+
+    private var redElements: Int {
+        var count = 0
+
+            for row in matrix {
+                for element in row {
+                    if element {
+                        count += 1
+                    }
+                }
+            }
+            return count
     }
 
     private var cellScaleFactor = 1.0
@@ -69,7 +92,7 @@ final class ModulationViewController: UIViewController {
     private lazy var redLabel: UILabel = {
         let label = UILabel()
         label.translatesAutoresizingMaskIntoConstraints = false
-        label.text = ": \(red)"
+        label.text = ": \(redElements)"
         return label
     }()
 
@@ -80,6 +103,7 @@ final class ModulationViewController: UIViewController {
         layout.minimumLineSpacing = 8
         layout.scrollDirection =  .horizontal
 
+
         let collectionView = UICollectionView(
             frame: self.view.bounds,
             collectionViewLayout: layout
@@ -89,6 +113,10 @@ final class ModulationViewController: UIViewController {
         collectionView.backgroundColor = .systemGray5
         collectionView.register(UICollectionViewCell.self,
                                 forCellWithReuseIdentifier: "collectionCell")
+
+        collectionView.alwaysBounceVertical = true
+        collectionView.alwaysBounceHorizontal = true
+
         collectionView.dataSource = self
         collectionView.delegate = self
         return collectionView
@@ -145,8 +173,6 @@ final class ModulationViewController: UIViewController {
         super.viewDidLoad()
         setupMainView()
         print(infectionFactor)
-        red = 0
-        green = matrixElements
         self.collectionView.reloadData()
     }
 
@@ -164,35 +190,37 @@ final class ModulationViewController: UIViewController {
     // MARK: - Private Methods
     // MARK: - Update View With Timer
     private func updateView() {
-        if green == 0 {
+        if greenElements <= 0 {
             timer?.invalidate()
             timer = nil
         }
-        replaceRandomNeighborsOfOneWithZero(matrix: &matrix,
+        replaceRandomNeighborsOfOneWithZero(matrix: matrix,
                                             withFactor: infectionFactor)
-        greenLabel.text = ": \(green)"
-        redLabel.text = ": \(red)"
+        greenLabel.text = ": \(greenElements)"
+        redLabel.text = ": \(redElements)"
         self.collectionView.reloadData()
     }
 
 
     // MARK: - Change Item in Matrix
-    private func replaceRandomNeighborsOfOneWithZero(matrix: inout [[Bool]],
+    private func replaceRandomNeighborsOfOneWithZero(matrix: [[Bool]],
                                                      withFactor factor: Int) {
+        DispatchQueue.global(qos: .background).async {
         let numRows = matrix.count
         let numColumns = matrix[0].count
 
-        for row in 0..<numRows {
-            for column in 0..<numColumns {
-                if matrix[row][column] == true {
-                    for _ in 0..<Int.random(in: 0...factor) {
-                        let randomRow = Int.random(in: max(row-1, 0)...min(row+1, numRows-1))
-                        let randomColumn = Int.random(in: max(column-1, 0)...min(column+1, numColumns-1))
+            for row in 0..<numRows {
+                for column in 0..<numColumns {
+                    if matrix[row][column] == true {
+                        for _ in 0..<Int.random(in: 0...factor) {
+                            let randomRow = Int.random(in: max(row-1, 0)...min(row+1, numRows-1))
+                            let randomColumn = Int.random(in: max(column-1, 0)...min(column+1, numColumns-1))
 
-                        if matrix[randomRow][randomColumn] == false {
-                            green -= 1
-                            red += 1
-                            matrix[randomRow][randomColumn] = true
+                            DispatchQueue.main.async {
+                                if matrix[randomRow][randomColumn] == false {
+                                    self.matrix[randomRow][randomColumn] = true
+                                }
+                            }
                         }
                     }
                 }
@@ -225,7 +253,7 @@ final class ModulationViewController: UIViewController {
                 runLoop.add(self.timer!, forMode: .default)
                 runLoop.run()
             }
-            addRandomRedInMatrix(&matrix)
+            addRandomRedInMatrix(matrix)
         }
     }
 
@@ -249,14 +277,17 @@ final class ModulationViewController: UIViewController {
         }
     }
 
-    private func addRandomRedInMatrix(_ matrix: inout [[Bool]]) {
-        let randomRow = Int.random(in: 0..<matrix.count)
-        let randomColumn = Int.random(in: 0..<matrix[randomRow].count)
+    private func addRandomRedInMatrix(_ matrix: [[Bool]]) {
+        DispatchQueue.global(qos: .background).async {
+            let randomRow = Int.random(in: 0..<matrix.count)
+            let randomColumn = Int.random(in: 0..<matrix[randomRow].count)
 
-        if matrix[randomRow][randomColumn] == false {
-            green -= 1
-            red += 1
-            matrix[randomRow][randomColumn] = true
+
+            DispatchQueue.main.async {
+                if matrix[randomRow][randomColumn] == false {
+                    self.matrix[randomRow][randomColumn] = true
+                }
+            }
         }
     }
 
@@ -285,7 +316,7 @@ extension ModulationViewController {
             header.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             header.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
             header.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
-            header.heightAnchor.constraint(equalToConstant: 60),
+            header.heightAnchor.constraint(equalToConstant: 50),
 
             greenView.centerYAnchor.constraint(equalTo: header.centerYAnchor),
             greenView.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 16),
@@ -305,8 +336,8 @@ extension ModulationViewController {
 
             // Collection view
             collectionView.topAnchor.constraint(equalTo: header.bottomAnchor),
-            collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            collectionView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
+            collectionView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
             collectionView.bottomAnchor.constraint(equalTo: footer.topAnchor),
 
             // Footer
@@ -390,20 +421,26 @@ extension ModulationViewController: UICollectionViewDelegate, UICollectionViewDa
 
     func collectionView(_ collectionView: UICollectionView,
                         didSelectItemAt indexPath: IndexPath) {
-        selectCell()
-        let item = matrix[indexPath.section][indexPath.row]
-        if item {
-            green += 1
-            matrix[indexPath.section][indexPath.row].toggle()
-            red -= 1
-        } else {
-            red += 1
-            matrix[indexPath.section][indexPath.row].toggle()
-            green -= 1
+        DispatchQueue.global(qos: .background).async {
+            self.selectCell()
+            let item = self.matrix[indexPath.section][indexPath.row]
+            DispatchQueue.main.async {
 
+                if item {
+                    self.matrix[indexPath.section][indexPath.row].toggle()
+                } else {
+                    self.matrix[indexPath.section][indexPath.row].toggle()
+                }
+            }
         }
         collectionView.reloadData()
     }
+
+    func collectionView(collectionView: UICollectionView,
+                        layout collectionViewLayout: UICollectionViewLayout,
+                        insetForSectionAtIndex section: Int) -> UIEdgeInsets {
+            return UIEdgeInsets(top: 5, left: 5, bottom: 5, right: 5)
+        }
 }
 
 // MARK: - Collection View Delegate Flow Layout
