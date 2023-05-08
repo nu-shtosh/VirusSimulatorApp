@@ -7,7 +7,7 @@
 
 import UIKit
 
-class ModulationViewController: UIViewController {
+final class ModulationViewController: UIViewController {
 
     // MARK: - Properties
     var groupSize = 0
@@ -33,9 +33,6 @@ class ModulationViewController: UIViewController {
     private var cellScaleFactor = 1.0
 
     // MARK: - UI Elements
-
-
-
     // MARK: - Header
     private lazy var header: UIView = {
         let view = UIView()
@@ -79,8 +76,8 @@ class ModulationViewController: UIViewController {
     // MARK: - Collection View
     private lazy var collectionView: UICollectionView = {
         let layout = UICollectionViewFlowLayout()
-        layout.minimumInteritemSpacing = 5
-        layout.minimumLineSpacing = 5
+        layout.minimumInteritemSpacing = 8
+        layout.minimumLineSpacing = 8
         layout.scrollDirection = .horizontal
 
         let collectionView = UICollectionView(
@@ -147,6 +144,7 @@ class ModulationViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupMainView()
+        print(infectionFactor)
         red = 0
         green = matrixElements
         self.collectionView.reloadData()
@@ -187,7 +185,7 @@ class ModulationViewController: UIViewController {
         for row in 0..<numRows {
             for column in 0..<numColumns {
                 if matrix[row][column] == true {
-                    for _ in 0..<Int.random(in: 0..<factor) {
+                    for _ in 0..<Int.random(in: 0...factor) {
                         let randomRow = Int.random(in: max(row-1, 0)...min(row+1, numRows-1))
                         let randomColumn = Int.random(in: max(column-1, 0)...min(column+1, numColumns-1))
 
@@ -231,7 +229,7 @@ class ModulationViewController: UIViewController {
         }
     }
 
-    func selectCell() {
+    private func selectCell() {
         if timer == nil {
             DispatchQueue.global(qos: .background).async {
                 self.timer = Timer.scheduledTimer(withTimeInterval: self.recalculationPeriod,

@@ -42,7 +42,16 @@ final class SettingsViewController: UIViewController {
     private lazy var infectionFactorLabel: UILabel = {
         let label = UILabel()
         label.translatesAutoresizingMaskIntoConstraints = false
-        label.text = "Input Infection Factor"
+        label.text = "Maximum Infection Factor"
+        label.textColor = .black
+        label.font = .systemFont(ofSize: 16, weight: .bold)
+        return label
+    }()
+
+    private lazy var minFactorLabel: UILabel = {
+        let label = UILabel()
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.text = "1"
         label.textColor = .black
         label.font = .systemFont(ofSize: 16, weight: .bold)
         return label
@@ -50,21 +59,32 @@ final class SettingsViewController: UIViewController {
 
     private lazy var infectionFactorTextField: UITextField = {
         let textField = UITextField()
+        infectionFactorSlider.addTarget(self, action: #selector(sliderChange), for: .valueChanged)
+        textField.inputView = infectionFactorSlider
+        textField.font = .systemFont(ofSize: 16, weight: .bold)
+        textField.text = String(Int(infectionFactorSlider.value))
+        textField.isEnabled = false
         textField.translatesAutoresizingMaskIntoConstraints = false
-        textField.placeholder = "3"
-        textField.keyboardType = .numberPad
-        textField.layer.masksToBounds = true
-        textField.font = .systemFont(ofSize: 16, weight: .regular)
-        textField.backgroundColor = .white
-        textField.layer.cornerRadius = 8
-        textField.layer.borderColor = UIColor.systemGray3.cgColor
-        textField.layer.borderWidth = 1
-        textField.leftView = UIView(frame: CGRect(x: 0,
-                                                  y: 0,
-                                                  width: 10,
-                                                  height: textField.frame.height))
-        textField.leftViewMode = .always
         return textField
+    }()
+
+    private lazy var maxFactorLabel: UILabel = {
+        let label = UILabel()
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.text = "8"
+        label.textColor = .black
+        label.font = .systemFont(ofSize: 16, weight: .bold)
+        return label
+    }()
+
+    private lazy var infectionFactorSlider: UISlider = {
+        let slider = UISlider()
+        slider.minimumValue = 1
+        slider.maximumValue = 8
+        slider.translatesAutoresizingMaskIntoConstraints = false
+        slider.value = 3
+        slider.isContinuous = true
+        return slider
     }()
 
     // MARK: - Timer
@@ -100,7 +120,8 @@ final class SettingsViewController: UIViewController {
     private lazy var alertMessage: UILabel = {
         let label = UILabel()
         label.translatesAutoresizingMaskIntoConstraints = false
-        label.text = "You must to add something in Text Fields!"
+        label.text = "Error! You must to add something in Text Fields! And you cannot use negative number!"
+        label.numberOfLines = 0
         label.textColor = .red
         label.font = .systemFont(ofSize: 16, weight: .bold)
         label.isHidden = true
@@ -133,21 +154,20 @@ final class SettingsViewController: UIViewController {
     // MARK: - Start Button Did Tapped
     @objc func startModulationButtonDidTupped() {
         if let groupSize = Int(groupSizeTextField.text ?? "0"),
-           let infectionFactor = Int(infectionFactorTextField.text ?? "0"),
            let recalculationPeriod = Double(recalculationPeriodTextField.text ?? "0"),
            groupSize > 0,
-           infectionFactor > 0,
            recalculationPeriod > 0 {
             let modulationVC = ModulationViewController()
 
             modulationVC.groupSize = groupSize
-            modulationVC.infectionFactor = infectionFactor
+            modulationVC.infectionFactor = Int(infectionFactorSlider.value)
             modulationVC.recalculationPeriod = recalculationPeriod
 
             modulationVC.matrix = makeMatrix(groupSize)
 
             self.groupSizeTextField.text = nil
-            self.infectionFactorTextField.text = nil
+            self.infectionFactorSlider.value = 3
+            self.infectionFactorTextField.text = "3"
             self.recalculationPeriodTextField.text = nil
 
             self.alertMessage.isHidden = true
@@ -166,6 +186,10 @@ final class SettingsViewController: UIViewController {
                                       count: Int(columns)),
                      count: Int(rows))
     }
+
+    @objc func sliderChange() {
+        infectionFactorTextField.text = String(Int(infectionFactorSlider.value))
+    }
 }
 
 // MARK: - Setup Main View
@@ -177,6 +201,9 @@ extension SettingsViewController {
                          groupSizeTextField,
                          infectionFactorLabel,
                          infectionFactorTextField,
+                         minFactorLabel,
+                         maxFactorLabel,
+                         infectionFactorSlider,
                          recalculationPeriodLabel,
                          recalculationPeriodTextField,
                          startModulationButton,
@@ -207,15 +234,23 @@ extension SettingsViewController {
             // Factor
             infectionFactorLabel.topAnchor.constraint(equalTo: groupSizeTextField.bottomAnchor, constant: 20),
             infectionFactorLabel.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 16),
-            infectionFactorLabel.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
 
-            infectionFactorTextField.topAnchor.constraint(equalTo: infectionFactorLabel.bottomAnchor, constant: 10),
-            infectionFactorTextField.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 16),
+            infectionFactorTextField.topAnchor.constraint(equalTo: groupSizeTextField.bottomAnchor, constant: 20),
             infectionFactorTextField.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
-            infectionFactorTextField.heightAnchor.constraint(equalToConstant: 40),
+
+            minFactorLabel.topAnchor.constraint(equalTo: infectionFactorLabel.bottomAnchor, constant: 20),
+            minFactorLabel.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 16),
+
+            maxFactorLabel.topAnchor.constraint(equalTo: infectionFactorLabel.bottomAnchor, constant: 20),
+            maxFactorLabel.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
+
+            infectionFactorSlider.topAnchor.constraint(equalTo: infectionFactorLabel.bottomAnchor, constant: 10),
+            infectionFactorSlider.leadingAnchor.constraint(equalTo: minFactorLabel.trailingAnchor, constant: 8),
+            infectionFactorSlider.trailingAnchor.constraint(equalTo: maxFactorLabel.leadingAnchor, constant: -8),
+            infectionFactorSlider.heightAnchor.constraint(equalToConstant: 40),
 
             // Timer
-            recalculationPeriodLabel.topAnchor.constraint(equalTo: infectionFactorTextField.bottomAnchor, constant: 20),
+            recalculationPeriodLabel.topAnchor.constraint(equalTo: infectionFactorSlider.bottomAnchor, constant: 20),
             recalculationPeriodLabel.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 16),
             recalculationPeriodLabel.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
 
