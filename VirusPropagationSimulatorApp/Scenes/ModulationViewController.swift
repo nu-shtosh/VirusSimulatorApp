@@ -215,10 +215,7 @@ final class ModulationViewController: UIViewController, UIGestureRecognizerDeleg
         if greenElements <= 0 {
             timer?.invalidate()
             timer = nil
-        } else {
-            replaceRandomNeighborsInMatrix(matrix, withFactor: infectionFactor)
         }
-
         greenLabel.text = ": \(greenElements)"
         redLabel.text = ": \(redElements)"
 
@@ -228,28 +225,28 @@ final class ModulationViewController: UIViewController, UIGestureRecognizerDeleg
     /**
      Этот метод заменяет случайных соседей в матрице на основе заданного фактора.
      Parameters:
-        matrix: Матрица типа [[Bool]], в которой происходит замена соседей.
-        factor: Фактор, определяющий количество замен соседей для каждой ячейки матрицы.
+     matrix: Матрица типа [[Bool]], в которой происходит замена соседей.
+     factor: Фактор, определяющий количество замен соседей для каждой ячейки матрицы.
      */
     private func replaceRandomNeighborsInMatrix(_ matrix: [[Bool]], withFactor factor: Int) {
         let numRows = matrix.count
         let numColumns = matrix[0].count
 
-        DispatchQueue.global(qos: .background).async {
-            for row in 0..<numRows {
-                for column in 0..<numColumns {
-                    if matrix[row][column] {
-                        for _ in 0..<Int.random(in: 0...factor) {
-                            let randomRow = Int.random(in: max(row-1, 0)...min(row+1, numRows-1))
-                            let randomColumn = Int.random(in: max(column-1, 0)...min(column+1, numColumns-1))
+        //        DispatchQueue.global(qos: .background).async {
+        for row in 0..<numRows {
+            for column in 0..<numColumns {
+                if matrix[row][column] {
+                    for _ in 0..<Int.random(in: 0...factor) {
+                        let randomRow = Int.random(in: max(row-1, 0)...min(row+1, numRows-1))
+                        let randomColumn = Int.random(in: max(column-1, 0)...min(column+1, numColumns-1))
 
-                            DispatchQueue.main.async {
-                                if !matrix[randomRow][randomColumn] {
-                                    self.matrix[randomRow][randomColumn] = true
-                                }
-                            }
+                        //                            DispatchQueue.main.async {
+                        if !matrix[randomRow][randomColumn] {
+                            self.matrix[randomRow][randomColumn] = true
                         }
+                        //                            }
                     }
+                    //                    }
                 }
             }
         }
@@ -272,15 +269,18 @@ final class ModulationViewController: UIViewController, UIGestureRecognizerDeleg
         if timer == nil {
             DispatchQueue.global(qos: .background).async {
                 self.timer = Timer(fire: Date(), interval: self.recalculationPeriod, repeats: true) { [weak self] timer in
+                    
                     guard let self = self else {
                         timer.invalidate()
                         return
                     }
-
-                    DispatchQueue.main.async {
-                        self.seconds += 1
-                        self.updateView()
-                        self.updateTimerLabel()
+                    self.seconds += 1
+                    DispatchQueue.global(qos: .background) .async {
+                        self.replaceRandomNeighborsInMatrix(self.matrix, withFactor: self.infectionFactor)
+                        DispatchQueue.main.async {
+                            self.updateView()
+                            self.updateTimerLabel()
+                        }
                     }
                 }
 
@@ -295,24 +295,31 @@ final class ModulationViewController: UIViewController, UIGestureRecognizerDeleg
     }
 
     /**
-     Метод для запуска таймера при нажатии на зеленую клетку.
+     Метод для запуска заражения при нажатии на зеленую клетку.
      */
     private func selectCell() {
         if timer == nil {
             DispatchQueue.global(qos: .background).async {
-                self.timer = Timer.scheduledTimer(withTimeInterval: self.recalculationPeriod,
-                                                  repeats: true) { timer in
+                self.timer = Timer(fire: Date(), interval: self.recalculationPeriod, repeats: true) { [weak self] timer in
+
+                    guard let self = self else {
+                        timer.invalidate()
+                        return
+                    }
                     self.seconds += 1
-                    DispatchQueue.main.async {
-                        self.updateView()
-                        self.updateTimerLabel()
+                    DispatchQueue.global(qos: .background) .async {
+                        self.replaceRandomNeighborsInMatrix(self.matrix, withFactor: self.infectionFactor)
+                        DispatchQueue.main.async {
+                            self.updateView()
+                            self.updateTimerLabel()
+                        }
                     }
                 }
 
-                self.timer!.tolerance = 0.1
-                let runLoop = RunLoop.current
-                runLoop.add(self.timer!, forMode: .default)
-                runLoop.run()
+                if let timer = self.timer {
+                    RunLoop.current.add(timer, forMode: .default)
+                    RunLoop.current.run()
+                }
             }
         }
     }
@@ -331,10 +338,8 @@ final class ModulationViewController: UIViewController, UIGestureRecognizerDeleg
         let randomRow = Int.random(in: 0..<numRows)
         let randomColumn = Int.random(in: 0..<numColumns)
 
-        DispatchQueue.main.async {
-            if !matrix[randomRow][randomColumn] {
-                self.matrix[randomRow][randomColumn] = true
-            }
+        if !matrix[randomRow][randomColumn] {
+            self.matrix[randomRow][randomColumn] = true
         }
     }
 
@@ -347,7 +352,6 @@ final class ModulationViewController: UIViewController, UIGestureRecognizerDeleg
         timer = nil
     }
 
-    
     @objc
     func handlePinchGesture(_ gestureRecognizer: UIPinchGestureRecognizer) {
         if gestureRecognizer.state == .began || gestureRecognizer.state == .changed {
