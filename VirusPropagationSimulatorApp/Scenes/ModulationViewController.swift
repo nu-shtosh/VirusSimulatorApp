@@ -98,10 +98,16 @@ final class ModulationViewController: UIViewController, UIGestureRecognizerDeleg
 
     // MARK: - Scroll View
     private lazy var scrollView: UIScrollView = {
-        let scrollView = UIScrollView(frame: CGRect(x: 0, y: 0, width: 100, height: 100))
+        let scrollView = UIScrollView(frame: CGRect(x: 0,
+                                                    y: 0,
+                                                    width: 0,
+                                                    height: 0))
         scrollView.backgroundColor = .white
         scrollView.showsVerticalScrollIndicator = false
-        scrollView.contentSize = CGSize(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
+        scrollView.contentSize = CGSize(width: UIScreen.main.bounds.width * 2,
+                                        height: UIScreen.main.bounds.height * 2)
+        scrollView.isDirectionalLockEnabled = true
+        scrollView.bounces = true
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         return scrollView
     }()
@@ -109,15 +115,13 @@ final class ModulationViewController: UIViewController, UIGestureRecognizerDeleg
     // MARK: - Collection View
     private lazy var collectionView: UICollectionView = {
         let layout = UICollectionViewFlowLayout()
-        layout.scrollDirection =  .vertical
+        layout.scrollDirection = .horizontal
 
-        let collectionView = UICollectionView(
-            frame: CGRect(x: 0,
-                          y: 0,
-                          width: UIScreen.main.bounds.width * 3,
-                          height: UIScreen.main.bounds.height * 2),
-            collectionViewLayout: layout
-        )
+        let collectionView = UICollectionView(frame: CGRect(x: 0,
+                                                            y: 0,
+                                                            width: UIScreen.main.bounds.width * 2,
+                                                            height: UIScreen.main.bounds.height * 2),
+                                              collectionViewLayout: layout)
 
         collectionView.translatesAutoresizingMaskIntoConstraints = false
         collectionView.backgroundColor = .white
@@ -129,8 +133,13 @@ final class ModulationViewController: UIViewController, UIGestureRecognizerDeleg
 
         collectionView.dataSource = self
         collectionView.delegate = self
+
+        collectionView.contentSize = CGSize(width: UIScreen.main.bounds.width * 3,
+                                            height: UIScreen.main.bounds.height * 2)
+
         return collectionView
     }()
+
 
     // MARK: - Footer
     private lazy var footer: UIView = {
@@ -151,10 +160,11 @@ final class ModulationViewController: UIViewController, UIGestureRecognizerDeleg
         button.layer.shadowColor = UIColor.black.cgColor
         button.layer.shadowOpacity = 0.5
         button.addTarget(self,
-                         action: #selector(startButtonDidTupped),
+                         action: #selector(startButtonDidTapped),
                          for: .touchUpInside)
         return button
     }()
+
 
     private lazy var stopButton: UIButton = {
         var buttonConfiguration = UIButton.Configuration.filled()
@@ -174,6 +184,7 @@ final class ModulationViewController: UIViewController, UIGestureRecognizerDeleg
 
     private lazy var timerLabel: UILabel = {
         let label = UILabel()
+        label.text =  "Pass Time: 00:00"
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
     }()
@@ -206,32 +217,34 @@ final class ModulationViewController: UIViewController, UIGestureRecognizerDeleg
         if greenElements <= 0 {
             timer?.invalidate()
             timer = nil
+        } else {
+            replaceRandomNeighborsInMatrix(matrix, withFactor: infectionFactor)
         }
-        replaceRandomNeighborsOfOneWithZero(matrix: matrix,
-                                            withFactor: infectionFactor)
+
         greenLabel.text = ": \(greenElements)"
         redLabel.text = ": \(redElements)"
-        self.collectionView.reloadData()
+
+        collectionView.reloadData()
     }
+
 
 
     // MARK: - Change Item in Matrix
     /// Замена случайного кол-ва клеток в зависимости от фактора заражения
-    private func replaceRandomNeighborsOfOneWithZero(matrix: [[Bool]],
-                                                     withFactor factor: Int) {
-        DispatchQueue.global(qos: .background).async {
-            let numRows = matrix.count
-            let numColumns = matrix[0].count
+    private func replaceRandomNeighborsInMatrix(_ matrix: [[Bool]], withFactor factor: Int) {
+        let numRows = matrix.count
+        let numColumns = matrix[0].count
 
+        DispatchQueue.global(qos: .background).async {
             for row in 0..<numRows {
                 for column in 0..<numColumns {
-                    if matrix[row][column] == true {
+                    if matrix[row][column] {
                         for _ in 0..<Int.random(in: 0...factor) {
                             let randomRow = Int.random(in: max(row-1, 0)...min(row+1, numRows-1))
                             let randomColumn = Int.random(in: max(column-1, 0)...min(column+1, numColumns-1))
 
                             DispatchQueue.main.async {
-                                if matrix[randomRow][randomColumn] == false {
+                                if !matrix[randomRow][randomColumn] {
                                     self.matrix[randomRow][randomColumn] = true
                                 }
                             }
@@ -241,6 +254,7 @@ final class ModulationViewController: UIViewController, UIGestureRecognizerDeleg
             }
         }
     }
+
 
     // MARK: - Update Timer
     /// Обновление таймера
@@ -252,26 +266,32 @@ final class ModulationViewController: UIViewController, UIGestureRecognizerDeleg
 
     /// Заражение случайной клетки и запуск таймера
     @objc
-    func startButtonDidTupped() {
+    func startButtonDidTapped() {
         if timer == nil {
             DispatchQueue.global(qos: .background).async {
-                self.timer = Timer.scheduledTimer(withTimeInterval: self.recalculationPeriod,
-                                                  repeats: true) { timer in
-                    self.seconds += 1
+                self.timer = Timer(fire: Date(), interval: self.recalculationPeriod, repeats: true) { [weak self] timer in
+                    guard let self = self else {
+                        timer.invalidate()
+                        return
+                    }
+
                     DispatchQueue.main.async {
+                        self.seconds += 1
                         self.updateView()
                         self.updateTimerLabel()
                     }
                 }
 
-                self.timer!.tolerance = 0.1
-                let runLoop = RunLoop.current
-                runLoop.add(self.timer!, forMode: .default)
-                runLoop.run()
+                if let timer = self.timer {
+                    RunLoop.current.add(timer, forMode: .default)
+                    RunLoop.current.run()
+                }
             }
+
             addRandomRedInMatrix(matrix)
         }
     }
+
     
     /// Метод для запуска таймера при нажатии на клетку
     private func selectCell() {
@@ -296,15 +316,19 @@ final class ModulationViewController: UIViewController, UIGestureRecognizerDeleg
 
     /// Добавление случайной больной клетки
     private func addRandomRedInMatrix(_ matrix: [[Bool]]) {
-        DispatchQueue.global(qos: .background).async {
-            let randomRow = Int.random(in: 0..<matrix.count)
-            let randomColumn = Int.random(in: 0..<matrix[randomRow].count)
+        let numRows = matrix.count
+        let numColumns = matrix.first?.count ?? 0
 
+        guard numRows > 0 && numColumns > 0 else {
+            return
+        }
 
-            DispatchQueue.main.async {
-                if matrix[randomRow][randomColumn] == false {
-                    self.matrix[randomRow][randomColumn] = true
-                }
+        let randomRow = Int.random(in: 0..<numRows)
+        let randomColumn = Int.random(in: 0..<numColumns)
+
+        DispatchQueue.main.async {
+            if !matrix[randomRow][randomColumn] {
+                self.matrix[randomRow][randomColumn] = true
             }
         }
     }
@@ -316,19 +340,19 @@ final class ModulationViewController: UIViewController, UIGestureRecognizerDeleg
         timer = nil
     }
 
-    @objc func handlePinchGesture(_ gestureRecognizer: UIPinchGestureRecognizer) {
+    
+    @objc
+    func handlePinchGesture(_ gestureRecognizer: UIPinchGestureRecognizer) {
         if gestureRecognizer.state == .began || gestureRecognizer.state == .changed {
-            // Изменяем масштаб
             scale *= gestureRecognizer.scale
             gestureRecognizer.scale = 1.0
 
-            // Применяем масштаб к UICollectionView
             collectionView.transform = CGAffineTransform(scaleX: scale, y: scale)
         }
     }
 
-    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
-        // Разрешаем одновременное распознавание жестов
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,
+                           shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
         return true
     }
 }
@@ -378,10 +402,9 @@ extension ModulationViewController {
             //            collectionView.bottomAnchor.constraint(equalTo: footer.topAnchor, constant: -8),
 
             scrollView.topAnchor.constraint(equalTo: header.bottomAnchor),
-            scrollView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
-            scrollView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
+            scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             scrollView.bottomAnchor.constraint(equalTo: footer.topAnchor),
-            
 
             // Footer
             footer.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
@@ -453,12 +476,9 @@ extension ModulationViewController: UICollectionViewDelegate, UICollectionViewDa
         return matrix.first?.count ?? 0
     }
 
-    func collectionView(_ collectionView: UICollectionView,
-                        cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "collectionCell",
-                                                      for: indexPath as IndexPath)
-        let item = matrix[indexPath.section][indexPath.row]
-        if !item  {
+    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "collectionCell", for: indexPath)
+        if !matrix[indexPath.section][indexPath.row] {
             cell.backgroundColor = .systemGreen
         } else {
             cell.backgroundColor = .systemRed
@@ -467,20 +487,12 @@ extension ModulationViewController: UICollectionViewDelegate, UICollectionViewDa
         return cell
     }
 
-    func collectionView(_ collectionView: UICollectionView,
-                        didSelectItemAt indexPath: IndexPath) {
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         DispatchQueue.global(qos: .background).async {
             self.selectCell()
-            let item = self.matrix[indexPath.section][indexPath.row]
-            DispatchQueue.main.async {
-                if item {
-                    self.matrix[indexPath.section][indexPath.row].toggle()
-                } else {
-                    self.matrix[indexPath.section][indexPath.row].toggle()
-                }
-            }
+            self.matrix[indexPath.section][indexPath.row].toggle()
         }
-        collectionView.reloadData()
+        collectionView.reloadItems(at: [indexPath])
     }
 
     func collectionView(collectionView: UICollectionView,
