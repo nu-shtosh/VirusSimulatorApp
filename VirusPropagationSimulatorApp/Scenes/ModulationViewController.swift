@@ -21,7 +21,6 @@ final class ModulationViewController: UIViewController, UIGestureRecognizerDeleg
     private var cellScaleFactor = 1.0
     private var scale: CGFloat = 1.0
 
-
     // MARK: - Computed Properties
     private var matrixElements: Int {
         let rowCount = matrix.count
@@ -140,7 +139,6 @@ final class ModulationViewController: UIViewController, UIGestureRecognizerDeleg
         return collectionView
     }()
 
-
     // MARK: - Footer
     private lazy var footer: UIView = {
         let view = UIView()
@@ -164,7 +162,6 @@ final class ModulationViewController: UIViewController, UIGestureRecognizerDeleg
                          for: .touchUpInside)
         return button
     }()
-
 
     private lazy var stopButton: UIButton = {
         var buttonConfiguration = UIButton.Configuration.filled()
@@ -230,7 +227,6 @@ final class ModulationViewController: UIViewController, UIGestureRecognizerDeleg
 
     /**
      Этот метод заменяет случайных соседей в матрице на основе заданного фактора.
-
      Parameters:
         matrix: Матрица типа [[Bool]], в которой происходит замена соседей.
         factor: Фактор, определяющий количество замен соседей для каждой ячейки матрицы.
