@@ -19,7 +19,6 @@
 
 /* Begin PBXFileReference section */
 		B83AD3072A0A8FF60007B9ED /* Helper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Helper.swift; sourceTree = "<group>"; };
-		B83AD30A2A0A9A440007B9ED /* SimulatorScreenRecording.mp4 */ = {isa = PBXFileReference; lastKnownFileType = file; path = SimulatorScreenRecording.mp4; sourceTree = "<group>"; };
 		B8CF53A52A03CCB7000D3775 /* VirusPropagationSimulatorApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VirusPropagationSimulatorApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B8CF53A82A03CCB7000D3775 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		B8CF53AA2A03CCB7000D3775 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -42,18 +41,9 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		B83AD3092A0A9A1B0007B9ED /* Screens */ = {
-			isa = PBXGroup;
-			children = (
-				B83AD30A2A0A9A440007B9ED /* SimulatorScreenRecording.mp4 */,
-			);
-			path = Screens;
-			sourceTree = "<group>";
-		};
 		B8CF539C2A03CCB7000D3775 = {
 			isa = PBXGroup;
 			children = (
-				B83AD3092A0A9A1B0007B9ED /* Screens */,
 				B8CF53A72A03CCB7000D3775 /* VirusPropagationSimulatorApp */,
 				B8CF53A62A03CCB7000D3775 /* Products */,
 			);
