@@ -144,24 +144,6 @@ final class SettingsViewController: UIViewController {
         return button
     }()
 
-    // TEST
-    //    private lazy var startWithCoreGraphicsUIButton = {
-    //        var buttonConfiguration = UIButton.Configuration.filled()
-    //        buttonConfiguration.baseBackgroundColor = .systemGreen
-    //        buttonConfiguration.title = "Start Modulation With Core Graphics"
-    //        let button = UIButton(configuration: buttonConfiguration)
-    //        button.translatesAutoresizingMaskIntoConstraints = false
-    //        button.layer.shadowOffset = CGSize(width: 3, height: 3)
-    //        button.layer.shadowRadius = 2
-    //        button.layer.shadowColor = UIColor.black.cgColor
-    //        button.layer.shadowOpacity = 0.5
-    //        button.addTarget(self,
-    //                         action: #selector(startModulationWithCoreGraphicsButtonDidTupped),
-    //                         for: .touchUpInside)
-    //        return button
-    //    }()
-
-
     // MARK: -  View Life Cycle
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -181,7 +163,7 @@ final class SettingsViewController: UIViewController {
             modulationVC.infectionFactor = Int(infectionFactorSlider.value)
             modulationVC.recalculationPeriod = recalculationPeriod
 
-            modulationVC.matrix = makeMatrix(groupSize)
+            modulationVC.matrix = Helper.shared.makeMatrix(groupSize)
 
             self.groupSizeTextField.text = nil
             self.infectionFactorSlider.value = 3
@@ -194,42 +176,6 @@ final class SettingsViewController: UIViewController {
             startModulationButton.shake()
             alertMessage.isHidden = false
         }
-    }
-
-    // TEST
-    //    @objc func startModulationWithCoreGraphicsButtonDidTupped() {
-    //        if let groupSize = Int(groupSizeTextField.text ?? "0"),
-    //           let recalculationPeriod = Double(recalculationPeriodTextField.text ?? "0"),
-    //           groupSize > 0,
-    //           recalculationPeriod > 0 {
-    //            let modulationVC = ModulationWithCoreGraphicsViewController()
-    //
-    //            modulationVC.groupSize = groupSize
-    //            modulationVC.infectionFactor = Int(infectionFactorSlider.value)
-    //            modulationVC.recalculationPeriod = recalculationPeriod
-    //
-    //            modulationVC.matrix = makeMatrix(groupSize)
-    //
-    //            self.groupSizeTextField.text = nil
-    //            self.infectionFactorSlider.value = 3
-    //            self.infectionFactorTextField.text = "3"
-    //            self.recalculationPeriodTextField.text = nil
-    //
-    //            self.alertMessage.isHidden = true
-    //            navigationController?.pushViewController(modulationVC, animated: true)
-    //        } else {
-    //            startModulationButton.shake()
-    //            alertMessage.isHidden = false
-    //        }
-    //    }
-
-    /// Создает правильную матрицу из какого то числа
-    func makeMatrix(_ number: Int) -> [[Bool]] {
-        let rows = sqrt(Double(number))
-        let columns = sqrt(Double(number))
-        return Array(repeating: Array(repeating: false,
-                                      count: Int(columns)),
-                     count: Int(rows))
     }
 
     @objc func sliderChange() {
@@ -253,9 +199,6 @@ extension SettingsViewController {
                          recalculationPeriodTextField,
                          startModulationButton,
                          alertMessage)
-
-        // TEST
-        //        view.addSubview(startWithCoreGraphicsUIButton)
         setupConstraints()
     }
 
@@ -316,12 +259,6 @@ extension SettingsViewController {
             alertMessage.topAnchor.constraint(equalTo: startModulationButton.bottomAnchor, constant: 10),
             alertMessage.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 16),
             alertMessage.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
-
-            // TEST
-            //            startWithCoreGraphicsUIButton.topAnchor.constraint(equalTo: alertMessage.bottomAnchor, constant: 30),
-            //            startWithCoreGraphicsUIButton.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 16),
-            //            startWithCoreGraphicsUIButton.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
-            //            startWithCoreGraphicsUIButton.heightAnchor.constraint(equalToConstant: 40),
         ])
     }
 }

@@ -212,7 +212,9 @@ final class ModulationViewController: UIViewController, UIGestureRecognizerDeleg
 
     // MARK: - Private Methods
     // MARK: - Update View With Timer
-    /// Обновление вью
+    /**
+     Этот метод отвечает за обновление элементов представления на основе текущего состояния симуляции. Он проверяет количество зеленых элементов и останавливает таймер, если не осталось больше зеленых элементов. В противном случае, он заменяет случайных соседей в матрице заданным коэффициентом заражения. После обновления необходимых элементов, он перезагружает коллекцию для отражения изменений.
+     */
     private func updateView() {
         if greenElements <= 0 {
             timer?.invalidate()
@@ -227,10 +229,13 @@ final class ModulationViewController: UIViewController, UIGestureRecognizerDeleg
         collectionView.reloadData()
     }
 
+    /**
+     Этот метод заменяет случайных соседей в матрице на основе заданного фактора.
 
-
-    // MARK: - Change Item in Matrix
-    /// Замена случайного кол-ва клеток в зависимости от фактора заражения
+     Parameters:
+        matrix: Матрица типа [[Bool]], в которой происходит замена соседей.
+        factor: Фактор, определяющий количество замен соседей для каждой ячейки матрицы.
+     */
     private func replaceRandomNeighborsInMatrix(_ matrix: [[Bool]], withFactor factor: Int) {
         let numRows = matrix.count
         let numColumns = matrix[0].count
@@ -255,16 +260,18 @@ final class ModulationViewController: UIViewController, UIGestureRecognizerDeleg
         }
     }
 
-
-    // MARK: - Update Timer
-    /// Обновление таймера
+    /**
+     Этот метод обновляет label таймера.
+     */
     private func updateTimerLabel() {
         let minutes = seconds / 60 * Int(recalculationPeriod)
         let seconds = seconds % 60 * Int(recalculationPeriod)
         timerLabel.text = "Pass Time: \(String(format: "%02d:%02d", minutes, seconds))"
     }
 
-    /// Заражение случайной клетки и запуск таймера
+    /**
+     Метод для запуска таймера при нажатии на кнопку старт и добавление случайной зараженной клетки если таймер еще не запущен
+     */
     @objc
     func startButtonDidTapped() {
         if timer == nil {
@@ -293,7 +300,9 @@ final class ModulationViewController: UIViewController, UIGestureRecognizerDeleg
     }
 
     
-    /// Метод для запуска таймера при нажатии на клетку
+    /**
+     Метод для запуска таймера при нажатии на зеленую клетку.
+     */
     private func selectCell() {
         if timer == nil {
             DispatchQueue.global(qos: .background).async {
@@ -314,7 +323,9 @@ final class ModulationViewController: UIViewController, UIGestureRecognizerDeleg
         }
     }
 
-    /// Добавление случайной больной клетки
+    /**
+     Добавление случайной больной клетки.
+     */
     private func addRandomRedInMatrix(_ matrix: [[Bool]]) {
         let numRows = matrix.count
         let numColumns = matrix.first?.count ?? 0
@@ -333,7 +344,9 @@ final class ModulationViewController: UIViewController, UIGestureRecognizerDeleg
         }
     }
 
-    /// Остановка таймера и процесса заражения
+    /**
+     Остановка таймера и процесса заражения.
+     */
     @objc
     func stopButtonDidTupped() {
         timer?.invalidate()
