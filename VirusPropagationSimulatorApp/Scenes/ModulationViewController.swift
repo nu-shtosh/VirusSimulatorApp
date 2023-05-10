@@ -7,7 +7,7 @@
 
 import UIKit
 
-final class ModulationViewController: UIViewController, UIGestureRecognizerDelegate {
+final class ModulationViewController: UIViewController {
 
     // MARK: - Properties
     var groupSize = 0
@@ -63,13 +63,13 @@ final class ModulationViewController: UIViewController, UIGestureRecognizerDeleg
         return view
     }()
 
-    private lazy var greenView: UIView = {
-        let view = UIView(frame: CGRect(x: 0, y: 0, width: 30, height: 30))
-        view.translatesAutoresizingMaskIntoConstraints = false
-        view.backgroundColor = .systemGreen
-        view.layer.cornerRadius = view.frame.width / 2
-        view.clipsToBounds = true
-        return view
+    private lazy var greenImageView: UIImageView = {
+        let imageView = UIImageView()
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        imageView.contentMode = .scaleAspectFill
+        imageView.image = UIImage(systemName: "figure.walk.circle")
+        imageView.tintColor = .systemGreen
+        return imageView
     }()
 
     private lazy var greenLabel: UILabel = {
@@ -79,13 +79,20 @@ final class ModulationViewController: UIViewController, UIGestureRecognizerDeleg
         return label
     }()
 
-    private lazy var redView: UIView = {
-        let view = UIView(frame: CGRect(x: 0, y: 0, width: 30, height: 30))
-        view.translatesAutoresizingMaskIntoConstraints = false
-        view.backgroundColor = .systemRed
-        view.layer.cornerRadius = view.frame.width / 2
-        view.clipsToBounds = true
-        return view
+    private lazy var timerLabel: UILabel = {
+        let label = UILabel()
+        label.text =  "Pass Time: 00:00"
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+
+    private lazy var redImageView: UIImageView = {
+        let imageView = UIImageView()
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        imageView.contentMode = .scaleAspectFill
+        imageView.image = UIImage(systemName: "figure.fall.circle")
+        imageView.tintColor = .systemRed
+        return imageView
     }()
 
     private lazy var redLabel: UILabel = {
@@ -124,8 +131,8 @@ final class ModulationViewController: UIViewController, UIGestureRecognizerDeleg
 
         collectionView.translatesAutoresizingMaskIntoConstraints = false
         collectionView.backgroundColor = .white
-        collectionView.register(UICollectionViewCell.self,
-                                forCellWithReuseIdentifier: "collectionCell")
+        collectionView.register(HumanCollectionViewCell.self,
+                                forCellWithReuseIdentifier: HumanCollectionViewCell.identifier)
 
         collectionView.alwaysBounceVertical = true
         collectionView.alwaysBounceHorizontal = true
@@ -137,53 +144,6 @@ final class ModulationViewController: UIViewController, UIGestureRecognizerDeleg
                                             height: UIScreen.main.bounds.height * 2)
 
         return collectionView
-    }()
-
-    // MARK: - Footer
-    private lazy var footer: UIView = {
-        let view = UIView()
-        view.translatesAutoresizingMaskIntoConstraints = false
-        view.backgroundColor = .systemGray6
-        return view
-    }()
-
-    private lazy var startButton: UIButton = {
-        var buttonConfiguration = UIButton.Configuration.filled()
-        buttonConfiguration.baseBackgroundColor = .systemBlue
-        buttonConfiguration.title = "Start"
-        let button = UIButton(configuration: buttonConfiguration)
-        button.translatesAutoresizingMaskIntoConstraints = false
-        button.layer.shadowOffset = CGSize(width: 3, height: 3)
-        button.layer.shadowRadius = 2
-        button.layer.shadowColor = UIColor.black.cgColor
-        button.layer.shadowOpacity = 0.5
-        button.addTarget(self,
-                         action: #selector(startButtonDidTapped),
-                         for: .touchUpInside)
-        return button
-    }()
-
-    private lazy var stopButton: UIButton = {
-        var buttonConfiguration = UIButton.Configuration.filled()
-        buttonConfiguration.baseBackgroundColor = .systemRed
-        buttonConfiguration.title = "Stop"
-        let button = UIButton(configuration: buttonConfiguration)
-        button.translatesAutoresizingMaskIntoConstraints = false
-        button.layer.shadowOffset = CGSize(width: 3, height: 3)
-        button.layer.shadowRadius = 2
-        button.layer.shadowColor = UIColor.black.cgColor
-        button.layer.shadowOpacity = 0.5
-        button.addTarget(self,
-                         action: #selector(stopButtonDidTupped),
-                         for: .touchUpInside)
-        return button
-    }()
-
-    private lazy var timerLabel: UILabel = {
-        let label = UILabel()
-        label.text =  "Pass Time: 00:00"
-        label.translatesAutoresizingMaskIntoConstraints = false
-        return label
     }()
 
     // MARK: - View Life Cycle
@@ -216,7 +176,9 @@ final class ModulationViewController: UIViewController, UIGestureRecognizerDeleg
             timer?.invalidate()
             timer = nil
         }
+
         greenLabel.text = ": \(greenElements)"
+        updateTimerLabel()
         redLabel.text = ": \(redElements)"
 
         collectionView.reloadData()
@@ -232,7 +194,6 @@ final class ModulationViewController: UIViewController, UIGestureRecognizerDeleg
         let numRows = matrix.count
         let numColumns = matrix[0].count
 
-        //        DispatchQueue.global(qos: .background).async {
         for row in 0..<numRows {
             for column in 0..<numColumns {
                 if matrix[row][column] {
@@ -240,13 +201,10 @@ final class ModulationViewController: UIViewController, UIGestureRecognizerDeleg
                         let randomRow = Int.random(in: max(row-1, 0)...min(row+1, numRows-1))
                         let randomColumn = Int.random(in: max(column-1, 0)...min(column+1, numColumns-1))
 
-                        //                            DispatchQueue.main.async {
                         if !matrix[randomRow][randomColumn] {
                             self.matrix[randomRow][randomColumn] = true
                         }
-                        //                            }
                     }
-                    //                    }
                 }
             }
         }
@@ -262,110 +220,28 @@ final class ModulationViewController: UIViewController, UIGestureRecognizerDeleg
     }
 
     /**
-     Метод для запуска таймера при нажатии на кнопку старт и добавление случайной зараженной клетки если таймер еще не запущен
-     */
-    @objc
-    func startButtonDidTapped() {
-        if timer == nil {
-            DispatchQueue.global(qos: .background).async {
-                self.timer = Timer(fire: Date(), interval: self.recalculationPeriod, repeats: true) { [weak self] timer in
-                    
-                    guard let self = self else {
-                        timer.invalidate()
-                        return
-                    }
-                    self.seconds += 1
-                    DispatchQueue.global(qos: .background) .async {
-                        self.replaceRandomNeighborsInMatrix(self.matrix, withFactor: self.infectionFactor)
-                        DispatchQueue.main.async {
-                            self.updateView()
-                            self.updateTimerLabel()
-                        }
-                    }
-                }
-
-                if let timer = self.timer {
-                    RunLoop.current.add(timer, forMode: .default)
-                    RunLoop.current.run()
-                }
-            }
-
-            addRandomRedInMatrix(matrix)
-        }
-    }
-
-    /**
-     Метод для запуска заражения при нажатии на зеленую клетку.
+     Метод для запуска таймера при нажатии на зеленую клетку.
      */
     private func selectCell() {
         if timer == nil {
-            DispatchQueue.global(qos: .background).async {
-                self.timer = Timer(fire: Date(), interval: self.recalculationPeriod, repeats: true) { [weak self] timer in
-
-                    guard let self = self else {
-                        timer.invalidate()
-                        return
-                    }
-                    self.seconds += 1
-                    DispatchQueue.global(qos: .background) .async {
-                        self.replaceRandomNeighborsInMatrix(self.matrix, withFactor: self.infectionFactor)
-                        DispatchQueue.main.async {
-                            self.updateView()
-                            self.updateTimerLabel()
-                        }
-                    }
+            timer = Timer(fire: Date(), interval: recalculationPeriod, repeats: true) { [weak self] timer in
+                guard let self = self else {
+                    timer.invalidate()
+                    return
                 }
-
-                if let timer = self.timer {
-                    RunLoop.current.add(timer, forMode: .default)
-                    RunLoop.current.run()
+                self.seconds += 1
+                self.replaceRandomNeighborsInMatrix(self.matrix, withFactor: self.infectionFactor)
+                DispatchQueue.main.async {
+                    self.updateView()
                 }
+            }
+            if let timer = timer {
+                RunLoop.current.add(timer, forMode: .default)
+                RunLoop.current.run()
             }
         }
     }
 
-    /**
-     Добавление случайной больной клетки.
-     */
-    private func addRandomRedInMatrix(_ matrix: [[Bool]]) {
-        let numRows = matrix.count
-        let numColumns = matrix.first?.count ?? 0
-
-        guard numRows > 0 && numColumns > 0 else {
-            return
-        }
-
-        let randomRow = Int.random(in: 0..<numRows)
-        let randomColumn = Int.random(in: 0..<numColumns)
-
-        if !matrix[randomRow][randomColumn] {
-            self.matrix[randomRow][randomColumn] = true
-        }
-    }
-
-    /**
-     Остановка таймера и процесса заражения.
-     */
-    @objc
-    func stopButtonDidTupped() {
-        timer?.invalidate()
-        timer = nil
-    }
-
-    @objc
-    func handlePinchGesture(_ gestureRecognizer: UIPinchGestureRecognizer) {
-        if gestureRecognizer.state == .began || gestureRecognizer.state == .changed {
-            scale *= gestureRecognizer.scale
-            gestureRecognizer.scale = 1.0
-
-            collectionView.transform = CGAffineTransform(scaleX: scale, y: scale)
-        }
-    }
-
-    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,
-                           shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
-        return true
-    }
 }
 
 // MARK: - Setup View
@@ -373,9 +249,8 @@ extension ModulationViewController {
     private func setupMainView() {
         view.backgroundColor = .white
         setupNavigationBar()
-        view.addSubviews(header, footer)
-        header.addSubviews(greenView, greenLabel, redLabel, redView)
-        footer.addSubviews(timerLabel, startButton, stopButton)
+        view.addSubviews(header)
+        header.addSubviews(greenImageView, greenLabel, redLabel, redImageView, timerLabel)
         view.addSubview(scrollView)
         scrollView.addSubview(collectionView)
         setConstraints()
@@ -390,51 +265,31 @@ extension ModulationViewController {
             header.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
             header.heightAnchor.constraint(equalToConstant: 50),
 
-            greenView.centerYAnchor.constraint(equalTo: header.centerYAnchor),
-            greenView.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 16),
-            greenView.widthAnchor.constraint(equalToConstant: 30),
-            greenView.heightAnchor.constraint(equalToConstant: 30),
+            greenImageView.centerYAnchor.constraint(equalTo: header.centerYAnchor),
+            greenImageView.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 16),
+            greenImageView.widthAnchor.constraint(equalToConstant: 30),
+            greenImageView.heightAnchor.constraint(equalToConstant: 30),
 
             greenLabel.centerYAnchor.constraint(equalTo: header.centerYAnchor),
-            greenLabel.leadingAnchor.constraint(equalTo: greenView.trailingAnchor, constant: 8),
+            greenLabel.leadingAnchor.constraint(equalTo: greenImageView.trailingAnchor, constant: 8),
+
+            timerLabel.centerXAnchor.constraint(equalTo: header.centerXAnchor),
+            timerLabel.centerYAnchor.constraint(equalTo: header.centerYAnchor),
+
 
             redLabel.centerYAnchor.constraint(equalTo: header.centerYAnchor),
             redLabel.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -16),
 
-            redView.centerYAnchor.constraint(equalTo: header.centerYAnchor),
-            redView.trailingAnchor.constraint(equalTo: redLabel.leadingAnchor, constant: -8),
-            redView.widthAnchor.constraint(equalToConstant: 30),
-            redView.heightAnchor.constraint(equalToConstant: 30),
+            redImageView.centerYAnchor.constraint(equalTo: header.centerYAnchor),
+            redImageView.trailingAnchor.constraint(equalTo: redLabel.leadingAnchor, constant: -8),
+            redImageView.widthAnchor.constraint(equalToConstant: 30),
+            redImageView.heightAnchor.constraint(equalToConstant: 30),
 
             // Collection view
-            //            collectionView.topAnchor.constraint(equalTo: header.bottomAnchor, constant: 8),
-            //            collectionView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 8),
-            //            collectionView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -8),
-            //            collectionView.bottomAnchor.constraint(equalTo: footer.topAnchor, constant: -8),
-
             scrollView.topAnchor.constraint(equalTo: header.bottomAnchor),
             scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            scrollView.bottomAnchor.constraint(equalTo: footer.topAnchor),
-
-            // Footer
-            footer.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
-            footer.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
-            footer.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
-            footer.heightAnchor.constraint(equalToConstant: 60),
-
-            timerLabel.centerYAnchor.constraint(equalTo: footer.centerYAnchor),
-            timerLabel.leadingAnchor.constraint(equalTo: footer.leadingAnchor, constant: 16),
-
-            startButton.centerYAnchor.constraint(equalTo: footer.centerYAnchor),
-            startButton.trailingAnchor.constraint(equalTo: footer.trailingAnchor, constant: -16),
-            startButton.widthAnchor.constraint(equalToConstant: 70),
-            startButton.heightAnchor.constraint(equalToConstant: 40),
-
-            stopButton.centerYAnchor.constraint(equalTo: footer.centerYAnchor),
-            stopButton.trailingAnchor.constraint(equalTo: startButton.leadingAnchor, constant: -16),
-            stopButton.widthAnchor.constraint(equalToConstant: 60),
-            stopButton.heightAnchor.constraint(equalToConstant: 40),
+            scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
         ])
     }
 
@@ -487,22 +342,18 @@ extension ModulationViewController: UICollectionViewDelegate, UICollectionViewDa
         return matrix.first?.count ?? 0
     }
 
-    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "collectionCell", for: indexPath)
-        if !matrix[indexPath.section][indexPath.row] {
-            cell.backgroundColor = .systemGreen
-        } else {
-            cell.backgroundColor = .systemRed
-        }
-        cell.layer.cornerRadius = cell.frame.width / 2
+    func collectionView(_ collectionView: UICollectionView,
+                        cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: HumanCollectionViewCell.identifier,
+                                                      for: indexPath) as! HumanCollectionViewCell
+        let item = matrix[indexPath.section][indexPath.row]
+        cell.setupCellWith(item)
         return cell
     }
 
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        DispatchQueue.global(qos: .background).async {
-            self.selectCell()
-            self.matrix[indexPath.section][indexPath.row].toggle()
-        }
+        self.matrix[indexPath.section][indexPath.row] = true
+        self.selectCell()
         collectionView.reloadItems(at: [indexPath])
     }
 
@@ -540,5 +391,23 @@ extension ModulationViewController: UICollectionViewDelegateFlowLayout {
             let height = 20 * cellScaleFactor
             return CGSize(width: width, height: height)
         }
+    }
+}
+
+// MARK: - UIGesture Recognizer Delegate
+extension ModulationViewController: UIGestureRecognizerDelegate {
+    @objc
+    func handlePinchGesture(_ gestureRecognizer: UIPinchGestureRecognizer) {
+        if gestureRecognizer.state == .began || gestureRecognizer.state == .changed {
+            scale *= gestureRecognizer.scale
+            gestureRecognizer.scale = 1.0
+
+            collectionView.transform = CGAffineTransform(scaleX: scale, y: scale)
+        }
+    }
+
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,
+                           shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
+        return true
     }
 }

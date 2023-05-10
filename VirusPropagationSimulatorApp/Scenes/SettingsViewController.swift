@@ -163,7 +163,7 @@ final class SettingsViewController: UIViewController {
             modulationVC.infectionFactor = Int(infectionFactorSlider.value)
             modulationVC.recalculationPeriod = recalculationPeriod
 
-            modulationVC.matrix = Helper.shared.makeMatrix(groupSize)
+            modulationVC.matrix = MatrixHelper.shared.makeMatrix(groupSize)
 
             self.groupSizeTextField.text = nil
             self.infectionFactorSlider.value = 3

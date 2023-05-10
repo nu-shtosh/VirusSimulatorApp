@@ -7,8 +7,8 @@
 
 import Foundation
 
-final class Helper {
-    static let shared: Helper = .init()
+final class MatrixHelper {
+    static let shared: MatrixHelper = .init()
 
     /**
      Этот метод генерирует правильную  матрицу логических значений с заданным размером.
